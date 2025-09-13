@@ -1,0 +1,82 @@
+# my-webapp.yaml
+
+# --- API Version and Kind ---
+# This tells Kubernetes what kind of object we are defining.
+# 'apps/v1' is the API group and version for core workload objects like Deployment.
+# 'Deployment' is the specific object type (the "Kind").
+apiVersion: apps/v1
+kind: Deployment
+
+# --- Metadata ---
+# This is data ABOUT the Deployment object itself.
+metadata:
+  # The unique name for our Deployment within the namespace.
+  name: my-webapp
+
+# --- Specification (The Desired State) ---
+# The 'spec' section is where we define the desired state for our Deployment.
+spec:
+  # --- Pod Management ---
+  # We want 3 identical copies (Pods) of our application running.
+  replicas: 3
+
+  # --- Selector: How the Deployment finds its Pods ---
+  # This is the crucial link. The Deployment will manage any Pods
+  # that have the labels defined here.
+  selector:
+    matchLabels:
+      app: my-webapp # This must match the Pod template's label below.
+
+  # --- Pod Template ---
+  # This is the blueprint for the Pods that the Deployment will create.
+  template:
+    # --- Pod Metadata ---
+    # Each Pod created from this template will have this metadata.
+    # The 'labels' are key-value pairs attached to objects.
+    metadata:
+      labels:
+        app: my-webapp # This label connects the Pod to the Deployment's selector.
+
+    # --- Pod Specification ---
+    # This defines the actual contents of the Pod, primarily its containers.
+    spec:
+      containers:
+        # A list of containers to run inside the Pod. We only have one.
+        - name: nginx-container # A name for the container within the Pod.
+          image: nginx:1.21 # The Docker container image to use.
+          ports:
+            - containerPort: 80 # The port inside the container that the application listens on.
+
+---
+# --- API Version and Kind ---
+# This is a Service object.
+apiVersion: v1
+kind: Service
+
+# --- Metadata ---
+metadata:
+  # The unique name for our Service.
+  name: my-webapp-service
+
+# --- Specification (The Desired State) ---
+spec:
+  # --- Service Type ---
+  # 'NodePort' exposes this Service on a port on every node in the cluster.
+  type: NodePort
+
+  # --- Selector: The Glue ---
+  # This selector tells the Service to find all Pods with the label 'app: my-webapp'
+  # and send traffic to them. This is how the Service and Deployment are connected.
+  selector:
+    app: my-webapp
+
+  # --- Port Mapping ---
+  # Defines how traffic is routed.
+  ports:
+    - protocol: TCP
+      # The port on the Service itself (within the cluster).
+      port: 80
+      # The port on the Pods that the traffic should be sent to.
+      targetPort: 80
+      # The 'nodePort' field is optional. If you omit it, Kubernetes will
+      # assign a random port in the 30000-32767 range.
